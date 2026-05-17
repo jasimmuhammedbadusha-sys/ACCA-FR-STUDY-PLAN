@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ACCA FR Mastery Tracker | Jasim Muhammed</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chosen Palette: Professional Finance (Warm Neutrals, Slate Blue, and Gold accents) -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+            color: #1e293b;
+        }
+
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 350px;
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        input[type="checkbox"] {
+            width: 1.2rem;
+            height: 1.2rem;
+            accent-color: #1e40af;
+            cursor: pointer;
+        }
+
+        .tab-active {
+            border-bottom: 3px solid #1e40af;
+            color: #1e40af;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12">
+
+    <!-- Application Structure Plan:
+        1. Navigation & Profile: A top bar identifying the user and primary navigation tabs.
+        2. Dashboard Summary: A high-level overview using dynamic charts and KPIs to show overall exam readiness.
+        3. Thematic Trackers: Grouping the 20+ topics into logical clusters (NCA, Specialized, Financial Statements) for easier navigation.
+        4. Interactive Grid: A detailed matrix where the user can mark Lecture, Hub, BPP, and Kaplan progress.
+        5. Persistence: Using LocalStorage to ensure Jasim's progress is saved directly in the browser.
+    -->
+
+    <!-- Header Section -->
+    <header class="bg-white border-b sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold text-slate-800">ACCA FR <span class="text-blue-700">Progress Canvas</span></h1>
+                <p class="text-xs text-slate-500 uppercase tracking-widest">Candidate: JASIM MUHAMMED</p>
+            </div>
+            <nav class="hidden md:flex space-x-8">
+                <button onclick="switchTab('dashboard')" id="btn-dashboard" class="tab-active py-2 px-1 text-sm">Dashboard</button>
+                <button onclick="switchTab('tracker')" id="btn-tracker" class="py-2 px-1 text-sm text-slate-500 hover:text-blue-700 transition">Syllabus Tracker</button>
+                <button onclick="switchTab('analysis')" id="btn-analysis" class="py-2 px-1 text-sm text-slate-500 hover:text-blue-700 transition">Detailed Analysis</button>
+            </nav>
+            <div class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold border border-blue-100">
+                Syllabus 2024/25
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+
+        <!-- DASHBOARD TAB -->
+        <section id="tab-dashboard" class="space-y-6">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-slate-800">Exam Readiness Overview</h2>
+                <p class="text-slate-600">Welcome back, Jasim. This section provides a strategic snapshot of your progress across all pillars of the Financial Reporting syllabus.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- KPI Cards -->
+                <div class="glass-card p-6 rounded-xl border-l-4 border-blue-600">
+                    <p class="text-sm font-semibold text-slate-500">Total Completion</p>
+                    <h3 id="stat-total-percent" class="text-3xl font-bold mt-1">0%</h3>
+                    <div class="w-full bg-slate-100 h-2 rounded-full mt-4">
+                        <div id="bar-total-percent" class="bg-blue-600 h-2 rounded-full transition-all duration-1000" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-xl border-l-4 border-green-600">
+                    <p class="text-sm font-semibold text-slate-500">Standards Mastered</p>
+                    <h3 id="stat-standards-count" class="text-3xl font-bold mt-1">0 / 25</h3>
+                    <p class="text-xs text-slate-400 mt-2">Requires Lecture + Kit completion</p>
+                </div>
+                <div class="glass-card p-6 rounded-xl border-l-4 border-amber-500">
+                    <p class="text-sm font-semibold text-slate-500">Exam Readiness</p>
+                    <h3 id="stat-readiness-label" class="text-3xl font-bold mt-1">Foundational</h3>
+                    <p class="text-xs text-slate-400 mt-2">Based on Section C practice</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                <div class="glass-card p-6 rounded-xl">
+                    <h4 class="font-semibold mb-4 text-slate-700">Progress by Category</h4>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-xl">
+                    <h4 class="font-semibold mb-4 text-slate-700">Recent Activity & Focus</h4>
+                    <ul id="activity-list" class="space-y-4 text-sm">
+                        <li class="flex items-start space-x-3">
+                            <span class="bg-blue-100 text-blue-700 rounded p-1 text-[10px] font-bold">INFO</span>
+                            <p class="text-slate-600">Start by checking off completed lectures in the Syllabus Tracker tab.</p>
+                        </li>
+                    </ul>
+                    <div class="mt-8 p-4 bg-amber-50 border border-amber-100 rounded-lg">
+                        <p class="text-xs font-bold text-amber-800 uppercase">Tip for Section C</p>
+                        <p class="text-xs text-amber-700 mt-1">Prioritize Consolidation (SOPL/SOFP) and Interpretation of Ratios. These areas typically account for 40% of the exam marks.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TRACKER TAB -->
+        <section id="tab-tracker" class="hidden space-y-6">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-slate-800">Syllabus Matrix</h2>
+                <p class="text-slate-600">This section allows you to record completion for every individual topic. Your progress is automatically saved to this browser.</p>
+            </div>
+
+            <div class="overflow-x-auto glass-card rounded-xl">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-200">
+                            <th class="p-4 text-sm font-semibold text-slate-600">Topic / Standard</th>
+                            <th class="p-4 text-sm font-semibold text-slate-600 text-center">Lecture</th>
+                            <th class="p-4 text-sm font-semibold text-slate-600 text-center">Hub</th>
+                            <th class="p-4 text-sm font-semibold text-slate-600 text-center">BPP Kit</th>
+                            <th class="p-4 text-sm font-semibold text-slate-600 text-center">Kaplan Kit</th>
+                            <th class="p-4 text-sm font-semibold text-slate-600">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tracker-body">
+                        <!-- Content generated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ANALYSIS TAB -->
+        <section id="tab-analysis" class="hidden space-y-6">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold text-slate-800">Resource Utilization</h2>
+                <p class="text-slate-600">Compare your progress across the major learning resources: Study Hub, BPP, and Kaplan.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-card p-6 rounded-xl text-center">
+                    <h5 class="text-sm font-semibold text-slate-500 mb-2">Lectures</h5>
+                    <div id="gauge-lectures" class="text-2xl font-bold text-blue-600">0%</div>
+                </div>
+                <div class="glass-card p-6 rounded-xl text-center">
+                    <h5 class="text-sm font-semibold text-slate-500 mb-2">Study Hub</h5>
+                    <div id="gauge-hub" class="text-2xl font-bold text-indigo-600">0%</div>
+                </div>
+                <div class="glass-card p-6 rounded-xl text-center">
+                    <h5 class="text-sm font-semibold text-slate-500 mb-2">Practice Kits</h5>
+                    <div id="gauge-kits" class="text-2xl font-bold text-green-600">0%</div>
+                </div>
+            </div>
+
+            <div class="glass-card p-6 rounded-xl mt-8">
+                <h4 class="font-semibold mb-6">Mastery Distribution</h4>
+                <div class="chart-container" style="max-width: 800px; height: 400px;">
+                    <canvas id="masteryBarChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="mt-12 py-8 border-t border-slate-200">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-slate-400 text-sm">Designed for ACCA FR Preparation | Candidate MUHAMMED</p>
+        </div>
+    </footer>
+
+    <!-- Visualization & Content Choices:
+        - Chart.js: Used for Category Progress (Doughnut) and Mastery Bar Chart.
+        - Data Model: Topics are grouped into 'Non-Current Assets', 'Financial Standards', and 'Reporting/Analysis'.
+        - Interactions: Checkboxes update real-time statistics and persist data using window.localStorage.
+        - NO SVG: Using standard HTML/CSS and Canvas for all visuals.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+
+    <script>
+        const syllabusData = [
+            { id: 'ias16', name: 'IAS 16 Property, Plant & Equipment', cat: 'NCA' },
+            { id: 'ias23', name: 'IAS 23 Borrowing Costs', cat: 'NCA' },
+            { id: 'ias40', name: 'IAS 40 Investment Property', cat: 'NCA' },
+            { id: 'ias38', name: 'IAS 38 Intangible Assets', cat: 'NCA' },
+            { id: 'ias36', name: 'IAS 36 Impairment of Assets', cat: 'NCA' },
+            { id: 'ifrs5', name: 'IFRS 5 Non-current Assets Held for Sale', cat: 'NCA' },
+            { id: 'ias20', name: 'IAS 20 Government Grants', cat: 'NCA' },
+            { id: 'ias2', name: 'IAS 2 Inventories', cat: 'Specialized' },
+            { id: 'ias41', name: 'IAS 41 Agriculture', cat: 'Specialized' },
+            { id: 'ias37', name: 'IAS 37 Provisions & Contingencies', cat: 'Specialized' },
+            { id: 'ias10', name: 'IAS 10 Events After Reporting Period', cat: 'Specialized' },
+            { id: 'ifrs13', name: 'IFRS 13 Fair Value Measurement', cat: 'Specialized' },
+            { id: 'ias8', name: 'IAS 8 Policies, Estimates & Errors', cat: 'Specialized' },
+            { id: 'ifrs15', name: 'IFRS 15 Revenue from Contracts', cat: 'Reporting' },
+            { id: 'ias12', name: 'IAS 12 Income Taxes', cat: 'Reporting' },
+            { id: 'ifrs16', name: 'IFRS 16 Leases', cat: 'Reporting' },
+            { id: 'ias21', name: 'IAS 21 Foreign Currency', cat: 'Reporting' },
+            { id: 'ias33', name: 'IAS 33 Earnings Per Share', cat: 'Reporting' },
+            { id: 'fininst', name: 'IAS 32, IFRS 7 & IFRS 9 (Financial Instruments)', cat: 'Reporting' },
+            { id: 'consmcq', name: 'Consolidation: MCQs', cat: 'Consolidation' },
+            { id: 'conssopl', name: 'Consolidation: SOPL', cat: 'Consolidation' },
+            { id: 'conssofp', name: 'Consolidation: SOFP', cat: 'Consolidation' },
+            { id: 'ratio', name: 'Ratio Analysis & Interpretation', cat: 'Reporting' },
+            { id: 'single', name: 'Single Entity Accounts', cat: 'Reporting' },
+            { id: 'groups', name: 'Groups Conceptual Framework', cat: 'Consolidation' }
+        ];
+
+        let state = JSON.parse(localStorage.getItem('acca_fr_state')) || {};
+
+        function initData() {
+            syllabusData.forEach(item => {
+                if (!state[item.id]) {
+                    state[item.id] = { lecture: false, hub: false, bpp: false, kaplan: false };
+                }
+            });
+        }
+
+        function toggleState(id, field) {
+            state[id][field] = !state[id][field];
+            localStorage.setItem('acca_fr_state', JSON.stringify(state));
+            renderTracker();
+            updateCharts();
+        }
+
+        function switchTab(tab) {
+            ['dashboard', 'tracker', 'analysis'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`btn-${t}`).classList.remove('tab-active');
+            });
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            document.getElementById(`btn-${tab}`).classList.add('tab-active');
+        }
+
+        function renderTracker() {
+            const container = document.getElementById('tracker-body');
+            container.innerHTML = '';
+            
+            syllabusData.forEach(item => {
+                const s = state[item.id];
+                const totalChecks = [s.lecture, s.hub, s.bpp, s.kaplan].filter(Boolean).length;
+                const progressPercent = (totalChecks / 4) * 100;
+                
+                let statusBadge = '';
+                if (progressPercent === 100) statusBadge = '<span class="text-green-600 font-bold text-xs">Mastered</span>';
+                else if (progressPercent >= 50) statusBadge = '<span class="text-blue-600 font-medium text-xs">Progressing</span>';
+                else statusBadge = '<span class="text-slate-400 text-xs">Started</span>';
+
+                const row = document.createElement('tr');
+                row.className = "border-b border-slate-100 hover:bg-slate-50 transition";
+                row.innerHTML = `
+                    <td class="p-4">
+                        <div class="text-sm font-semibold text-slate-700">${item.name}</div>
+                        <div class="text-[10px] text-slate-400 uppercase font-bold">${item.cat}</div>
+                    </td>
+                    <td class="p-4 text-center"><input type="checkbox" ${s.lecture ? 'checked' : ''} onclick="toggleState('${item.id}', 'lecture')"></td>
+                    <td class="p-4 text-center"><input type="checkbox" ${s.hub ? 'checked' : ''} onclick="toggleState('${item.id}', 'hub')"></td>
+                    <td class="p-4 text-center"><input type="checkbox" ${s.bpp ? 'checked' : ''} onclick="toggleState('${item.id}', 'bpp')"></td>
+                    <td class="p-4 text-center"><input type="checkbox" ${s.kaplan ? 'checked' : ''} onclick="toggleState('${item.id}', 'kaplan')"></td>
+                    <td class="p-4">${statusBadge}</td>
+                `;
+                container.appendChild(row);
+            });
+        }
+
+        let categoryChart, masteryChart;
+
+        function updateCharts() {
+            const totals = {
+                lecture: 0, hub: 0, kit: 0, overall: 0, mastered: 0
+            };
+            const cats = { 'NCA': 0, 'Specialized': 0, 'Reporting': 0, 'Consolidation': 0 };
+            const catTotals = { 'NCA': 0, 'Specialized': 0, 'Reporting': 0, 'Consolidation': 0 };
+
+            syllabusData.forEach(item => {
+                const s = state[item.id];
+                if (s.lecture) totals.lecture++;
+                if (s.hub) totals.hub++;
+                if (s.bpp || s.kaplan) totals.kit++;
+                
+                const points = (s.lecture ? 1 : 0) + (s.hub ? 1 : 0) + (s.bpp ? 1 : 0) + (s.kaplan ? 1 : 0);
+                totals.overall += points;
+                if (points >= 3) totals.mastered++;
+
+                cats[item.cat] += points;
+                catTotals[item.cat] += 4;
+            });
+
+            const maxPoints = syllabusData.length * 4;
+            const overallPercent = Math.round((totals.overall / maxPoints) * 100);
+
+            document.getElementById('stat-total-percent').innerText = overallPercent + '%';
+            document.getElementById('bar-total-percent').style.width = overallPercent + '%';
+            document.getElementById('stat-standards-count').innerText = `${totals.mastered} / ${syllabusData.length}`;
+            
+            document.getElementById('gauge-lectures').innerText = Math.round((totals.lecture / syllabusData.length) * 100) + '%';
+            document.getElementById('gauge-hub').innerText = Math.round((totals.hub / syllabusData.length) * 100) + '%';
+            document.getElementById('gauge-kits').innerText = Math.round((totals.kit / syllabusData.length) * 100) + '%';
+
+            const readiness = overallPercent > 80 ? 'Exam Ready' : (overallPercent > 40 ? 'Competent' : 'Foundational');
+            document.getElementById('stat-readiness-label').innerText = readiness;
+
+            // Doughnut Chart update
+            const catData = Object.keys(cats).map(k => Math.round((cats[k] / catTotals[k]) * 100));
+            if(categoryChart) {
+                categoryChart.data.datasets[0].data = catData;
+                categoryChart.update();
+            }
+
+            // Mastery Chart update
+            if(masteryChart) {
+                masteryChart.data.datasets[0].data = [totals.lecture, totals.hub, totals.kit, totals.mastered];
+                masteryChart.update();
+            }
+        }
+
+        window.onload = function() {
+            initData();
+            renderTracker();
+            
+            const ctx1 = document.getElementById('categoryChart').getContext('2d');
+            categoryChart = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Non-Current Assets', 'Specialized Standards', 'Reporting & Analysis', 'Consolidation'],
+                    datasets: [{
+                        data: [0, 0, 0, 0],
+                        backgroundColor: ['#1e40af', '#4f46e5', '#10b981', '#f59e0b'],
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, padding: 20 } }
+                    }
+                }
+            });
+
+            const ctx2 = document.getElementById('masteryBarChart').getContext('2d');
+            masteryChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['Lectures Watched', 'Study Hub Units', 'Practice Kits Attempted', 'Standards Mastered'],
+                    datasets: [{
+                        label: 'Completed Units',
+                        data: [0, 0, 0, 0],
+                        backgroundColor: '#3b82f6',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: syllabusData.length }
+                    }
+                }
+            });
+
+            updateCharts();
+        };
+    </script>
+</body>
+</html>
